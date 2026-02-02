@@ -30,6 +30,13 @@ def verify_api_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
+@app.get("/")
+def root():
+    return {
+        "status": "Agentic Honey-Pot is live",
+        "docs": "/docs",
+        "message_endpoint": "/message"
+    }
 
 # ---------------- REQUIRED ENDPOINT ----------------
 @app.post("/message", response_model=APIResponse)
@@ -90,3 +97,4 @@ async def evaluate(conversation_id: str, _: None = Depends(verify_api_key)):
     Returns structured evaluation metrics for a given conversation.
     """
     return summarize_conversation(conversation_id)
+
