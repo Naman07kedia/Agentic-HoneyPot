@@ -40,7 +40,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 openai.api_key = OPENAI_API_KEY
 
 MODEL = "gpt-3.5-turbo"
-TEMPERATURE = 0.7  # Human-like variability
+TEMPERATURE = 0.6  # Human-like variability
 
 def format_history(messages):
     """
@@ -78,7 +78,7 @@ Write your next reply as if you are continuing the conversation naturally, tryin
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             temperature=TEMPERATURE,
-            max_tokens=200
+            max_tokens=120
         )
 
         agent_reply = response.choices[0].message.content.strip()
