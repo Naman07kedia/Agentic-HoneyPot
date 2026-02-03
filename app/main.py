@@ -98,3 +98,10 @@ async def evaluate(conversation_id: str, _: None = Depends(verify_api_key)):
     """
     return summarize_conversation(conversation_id)
 
+@app.get("/")
+def health():
+    return {
+        "status": "live",
+        "service": "Agentic Honey-Pot",
+        "docs": "/docs"
+    }
