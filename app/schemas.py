@@ -10,7 +10,11 @@ class IncomingMessage(BaseModel):
     message: str
     timestamp: datetime
 
-
+    # optional / flexible fields
+    message_id: Optional[str] = None
+    sender: Optional[str] = "scammer"
+    timestamp: Optional[str] = None
+    
 class IntelligenceItem(BaseModel):
     value: str
     confidence: float
