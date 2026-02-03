@@ -1,6 +1,6 @@
-
 from app.config import API_KEY
 from fastapi import Query
+from datetime import datetime
 from app.evaluation import summarize_conversation
 from fastapi import FastAPI, Header, HTTPException, Depends
 from app.schemas import (
@@ -47,8 +47,8 @@ async def receive_message(
     conversation = get_conversation(payload.conversation_id)
 
     # Record incoming scammer message
-    record_message(conversation, payload.sender, payload.message)
-    update_turn(conversation, payload.sender)
+    record_message(conversation, sender, payload.message)
+    update_turn(conversation, sender)
 
     # Extract intelligence from incoming message
     extracted = extract_intelligence(
