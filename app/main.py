@@ -114,6 +114,11 @@ from app.agent import generate_agent_reply
 from app.extractor import extract_intelligence
 from app.callback import send_final_callback
 from app.config import API_KEY
+from app.evaluation import evaluate_session
+
+@app.get("/evaluate/{session_id}")
+def get_evaluation(session_id: str, _: None = Depends(verify_key)):
+    return evaluate_session(session_id)
 
 app = FastAPI(title="GUVI Agentic Honey-Pot")
 
