@@ -28,7 +28,7 @@ def home():
         <style>
             body {{
                 font-family: Inter, Arial;
-                background: #020617;
+                background: linear-gradient(135deg, #020617, #020617);
                 color: white;
                 padding: 40px;
             }}
@@ -46,32 +46,62 @@ def home():
                 padding: 6px 12px;
                 border-radius: 8px;
                 font-weight: bold;
+                display: inline-block;
+            }}
+            a {{
+                color: #38bdf8;
+                text-decoration: none;
+                font-weight: bold;
+            }}
+            .stats {{
+                margin-top: 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
             }}
             .card {{
                 background: #020617;
                 padding: 16px;
                 border-radius: 12px;
                 border: 1px solid #1e293b;
-                margin-top: 8px;
             }}
-            a {{ color: #38bdf8; font-weight: bold; text-decoration: none; }}
         </style>
     </head>
     <body>
         <div class="container">
             <h1>🚨 GUVI Agentic Honey-Pot API</h1>
-            <p>AI-powered scam detection & intelligence extraction honeypot.</p>
+            <p>AI-powered system that detects scam messages, autonomously engages scammers, extracts financial intelligence, and reports results to GUVI.</p>
+
             <span class="badge">LIVE • Hackathon Ready</span>
 
-            <div class="card">Total Sessions: {total_sessions}</div>
-            <div class="card">Scam Sessions: {scam_sessions}</div>
+            <div class="stats">
+                <div class="card">
+                    <b>Total Sessions</b><br>{total_sessions}
+                </div>
+                <div class="card">
+                    <b>Scam Sessions Detected</b><br>{scam_sessions}
+                </div>
+                <div class="card">
+                    <b>Status</b><br>Operational
+                </div>
+            </div>
 
-            <p>📘 Docs → <a href="/docs">Swagger UI</a></p>
-            <p>📡 Health → <a href="/health">/health</a></p>
+            <br>
+
+            <p>📘 API Documentation → <a href="/docs">Open Swagger UI</a></p>
+            <p>📡 Health Check → <a href="/health">/health</a></p>
+            <p>🧠 Evaluation → <a href="/evaluate/demo-session">/evaluate/{'{session_id}'}</a></p>
+
+            <hr style="border-color:#1e293b">
+
+            <p>🏆 Built for GUVI AI Summit Hackathon</p>
+            <p>🔐 Secure API Key Enabled</p>
+            <p>🤖 Autonomous Scam Engagement Engine</p>
         </div>
     </body>
     </html>
     """
+
 
 
 # ---------------- DASHBOARD ----------------
