@@ -54,6 +54,7 @@ from datetime import datetime
 
 sessions = {}
 
+session_store = {}
 
 def get_session(session_id):
     if session_id not in sessions:
