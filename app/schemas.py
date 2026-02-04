@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+'''from pydantic import BaseModel
 from typing import Optional, List, Dict
 from datetime import datetime
 
@@ -39,4 +39,21 @@ class APIResponse(BaseModel):
     agent_engaged: bool
     agent_response: Optional[str]
     conversation_metrics: ConversationMetrics
-    extracted_intelligence: ExtractedIntelligence
+    extracted_intelligence: ExtractedIntelligence'''
+
+from pydantic import BaseModel
+from typing import List, Optional
+
+
+class Message(BaseModel):
+    sender: str
+    text: str
+    timestamp: int
+
+
+class IncomingRequest(BaseModel):
+    sessionId: str
+    message: Message
+    conversationHistory: Optional[List[Message]] = []
+    metadata: Optional[dict] = {}
+
