@@ -1,116 +1,8 @@
-'''from app.config import API_KEY
-from fastapi import Query
-from datetime import datetime
-from app.evaluation import summarize_conversation
 from fastapi import FastAPI, Header, HTTPException, Depends
-from app.schemas import (
-    IncomingMessage,
-    APIResponse,
-    ConversationMetrics,
-    ExtractedIntelligence,
-)
+from fastapi.responses import HTMLResponse
 
-from app.state import (
-    get_conversation,
-    update_turn,
-    record_message,
-    engagement_duration_seconds,
-    add_intelligence,
-)
-
-from app.detector import detect_scam
-from app.agent import generate_agent_response
-from app.extractor import extract_intelligence
-
-app = FastAPI(title="Agentic Honey-Pot")
-
-
-# ---------------- API KEY AUTH ----------------
-def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-
-@app.get("/")
-def root():
-    return {
-        "status": "Agentic Honey-Pot is live",
-        "docs": "/docs",
-        "message_endpoint": "/message"
-    }
-
-# ---------------- REQUIRED ENDPOINT ----------------
-@app.post("/message", response_model=APIResponse)
-async def receive_message(
-    payload: IncomingMessage,
-    _: None = Depends(verify_api_key)
-):
-    conversation = get_conversation(payload.conversation_id)
-
-    # Record incoming scammer message
-    record_message(conversation, sender, payload.message)
-    update_turn(conversation, sender)
-
-    # Extract intelligence from incoming message
-    extracted = extract_intelligence(
-        payload.message,
-        conversation.total_turns
-    )
-    add_intelligence(conversation, extracted)
-
-    agent_response = None
-
-    # Scam detection (only once)
-    if not conversation.scam_detected:
-        is_scam, confidence = detect_scam(payload.message)
-        if is_scam:
-            conversation.scam_detected = True
-            conversation.scam_confidence = confidence
-            conversation.agent_engaged = True
-
-    # Agent handoff
-    if conversation.scam_detected:
-        agent_response = generate_agent_response(conversation)
-        record_message(conversation, "agent", agent_response)
-        update_turn(conversation, "agent")
-
-    metrics = ConversationMetrics(
-        total_turns=conversation.total_turns,
-        agent_turns=conversation.agent_turns,
-        engagement_duration_seconds=engagement_duration_seconds(conversation)
-    )
-
-    return APIResponse(
-        scam_detected=conversation.scam_detected,
-        confidence=conversation.scam_confidence,
-        agent_engaged=conversation.agent_engaged,
-        agent_response=agent_response,
-        conversation_metrics=metrics,
-        extracted_intelligence=ExtractedIntelligence(
-            bank_accounts=conversation.extracted_intelligence["bank_accounts"],
-            upi_ids=conversation.extracted_intelligence["upi_ids"],
-            phishing_links=conversation.extracted_intelligence["phishing_links"],
-        )
-    )
-@app.get("/evaluate/{conversation_id}")
-async def evaluate(conversation_id: str, _: None = Depends(verify_api_key)):
-    """
-    Returns structured evaluation metrics for a given conversation.
-    """
-    return summarize_conversation(conversation_id)
-
-@app.get("/")
-def health():
-    return {
-        "status": "live",
-        "service": "Agentic Honey-Pot",
-        "docs": "/docs"
-    }
-'''
-
-
-from fastapi import FastAPI, Header, HTTPException, Depends
 from app.schemas import IncomingRequest, APIResponse
-from app.state import get_session, update_session
+from app.state import get_session, update_session, session_store
 from app.detector import detect_scam
 from app.agent import generate_agent_reply
 from app.extractor import extract_intelligence
@@ -118,12 +10,12 @@ from app.callback import send_final_callback
 from app.config import API_KEY
 from app.evaluation import evaluate_session
 
+
 # ✅ CREATE APP FIRST
 app = FastAPI(title="GUVI Agentic Honey-Pot")
 
-from fastapi.responses import HTMLResponse
-from app.state import session_store
 
+# ---------------- HOME PAGE ----------------
 @app.get("/", response_class=HTMLResponse)
 def home():
     total_sessions = len(session_store)
@@ -136,7 +28,7 @@ def home():
         <style>
             body {{
                 font-family: Inter, Arial;
-                background: linear-gradient(135deg, #020617, #020617);
+                background: #020617;
                 color: white;
                 padding: 40px;
             }}
@@ -154,61 +46,35 @@ def home():
                 padding: 6px 12px;
                 border-radius: 8px;
                 font-weight: bold;
-                display: inline-block;
-            }}
-            a {{
-                color: #38bdf8;
-                text-decoration: none;
-                font-weight: bold;
-            }}
-            .stats {{
-                margin-top: 20px;
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 12px;
             }}
             .card {{
                 background: #020617;
                 padding: 16px;
                 border-radius: 12px;
                 border: 1px solid #1e293b;
+                margin-top: 8px;
             }}
+            a {{ color: #38bdf8; font-weight: bold; text-decoration: none; }}
         </style>
     </head>
     <body>
         <div class="container">
             <h1>🚨 GUVI Agentic Honey-Pot API</h1>
-            <p>AI-powered system that detects scam messages, autonomously engages scammers, extracts financial intelligence, and reports results to GUVI.</p>
-
+            <p>AI-powered scam detection & intelligence extraction honeypot.</p>
             <span class="badge">LIVE • Hackathon Ready</span>
 
-            <div class="stats">
-                <div class="card">
-                    <b>Total Sessions</b><br>{total_sessions}
-                </div>
-                <div class="card">
-                    <b>Scam Sessions Detected</b><br>{scam_sessions}
-                </div>
-                <div class="card">
-                    <b>Status</b><br>Operational
-                </div>
-            </div>
+            <div class="card">Total Sessions: {total_sessions}</div>
+            <div class="card">Scam Sessions: {scam_sessions}</div>
 
-            <br>
-
-            <p>📘 API Documentation → <a href="/docs">Open Swagger UI</a></p>
-            <p>📡 Health Check → <a href="/health">/health</a></p>
-            <p>🧠 Evaluation → <a href="/evaluate/demo-session">/evaluate/{'{session_id}'}</a></p>
-
-            <hr style="border-color:#1e293b">
-
-            <p>🏆 Built for GUVI AI Summit Hackathon</p>
-            <p>🔐 Secure API Key Enabled</p>
-            <p>🤖 Autonomous Scam Engagement Engine</p>
+            <p>📘 Docs → <a href="/docs">Swagger UI</a></p>
+            <p>📡 Health → <a href="/health">/health</a></p>
         </div>
     </body>
     </html>
     """
+
+
+# ---------------- DASHBOARD ----------------
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
     total_sessions = len(session_store)
@@ -217,55 +83,23 @@ def dashboard():
 
     return f"""
     <html>
-    <head>
-        <title>GUVI Honeypot Dashboard</title>
-        <style>
-            body {{
-                font-family: Inter, Arial;
-                background: #020617;
-                color: white;
-                padding: 30px;
-            }}
-            .grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 16px;
-            }}
-            .card {{
-                background: #020617;
-                padding: 20px;
-                border-radius: 14px;
-                border: 1px solid #1e293b;
-                box-shadow: 0 0 20px rgba(56,189,248,0.15);
-            }}
-            h1 {{ color: #38bdf8; }}
-            a {{ color: #22c55e; text-decoration: none; font-weight: bold; }}
-        </style>
-    </head>
-    <body>
-        <h1>📡 GUVI Honeypot Admin Dashboard</h1>
-
-        <div class="grid">
-            <div class="card">🧠 Total Sessions<br><b>{total_sessions}</b></div>
-            <div class="card">🚨 Scam Sessions<br><b>{scam_sessions}</b></div>
-            <div class="card">💬 Messages Logged<br><b>{total_messages}</b></div>
-        </div>
-
-        <br>
-
-        <p>🔍 View Conversations → <a href="/sessions">Sessions Panel</a></p>
-        <p>📘 API Docs → <a href="/docs">Swagger UI</a></p>
-        <p>🏠 Home → <a href="/">Home</a></p>
-
+    <body style="font-family:Arial;background:#020617;color:white;padding:30px;">
+        <h1>📡 GUVI Honeypot Dashboard</h1>
+        <p>Total Sessions: {total_sessions}</p>
+        <p>Scam Sessions: {scam_sessions}</p>
+        <p>Total Messages: {total_messages}</p>
+        <p><a style="color:#22c55e" href="/sessions">View Sessions</a></p>
+        <p><a style="color:#38bdf8" href="/docs">Docs</a></p>
     </body>
     </html>
     """
+
+
+# ---------------- SESSION VIEWER ----------------
 @app.get("/sessions", response_class=HTMLResponse)
 def view_sessions():
-    html = """
-    <html><body style="font-family:Arial;background:#020617;color:white;padding:30px;">
-    <h1>🕵️ Honeypot Session Viewer</h1>
-    """
+    html = "<html><body style='background:#020617;color:white;padding:30px;'>"
+    html += "<h1>🕵️ Honeypot Session Viewer</h1>"
 
     for session_id, session in session_store.items():
         html += f"<hr><h3>Session: {session_id}</h3>"
@@ -279,6 +113,9 @@ def view_sessions():
 
     html += "</body></html>"
     return html
+
+
+# ---------------- INTELLIGENCE PANEL ----------------
 @app.get("/intelligence", response_class=HTMLResponse)
 def intelligence_panel():
     html = "<html><body style='background:#020617;color:white;padding:30px;'>"
@@ -291,9 +128,13 @@ def intelligence_panel():
         html += f"<p>UPI IDs: {intel.get('upiIds')}</p>"
         html += f"<p>Phishing Links: {intel.get('phishingLinks')}</p>"
         html += f"<p>Phone Numbers: {intel.get('phoneNumbers')}</p>"
+        html += f"<p>Keywords: {intel.get('suspiciousKeywords')}</p>"
 
     html += "</body></html>"
     return html
+
+
+# ---------------- ANALYTICS ----------------
 @app.get("/analytics")
 def analytics():
     keywords = {}
@@ -309,36 +150,41 @@ def analytics():
     }
 
 
+# ---------------- API KEY AUTH ----------------
 def verify_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
 
+# ---------------- HEALTH ----------------
 @app.get("/health")
 def health():
     return {"status": "live", "service": "GUVI Agentic Honey-Pot"}
 
 
+# ---------------- EVALUATION ----------------
 @app.get("/evaluate/{session_id}")
 def get_evaluation(session_id: str, _: None = Depends(verify_key)):
     return evaluate_session(session_id)
 
 
+# ---------------- MAIN MESSAGE API ----------------
 @app.post("/message", response_model=APIResponse)
 async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)):
 
-        session = get_session(payload.sessionId)
+    session = get_session(payload.sessionId)
 
-    # Add new message to history
-            session["messages"].append(payload.message.dict())
-            session["totalMessages"] += 1
+    # Store incoming message
+    session["messages"].append(payload.message.dict())
+    session["totalMessages"] += 1
 
-    # Detect scam intent
-if not session["scamDetected"]:
-         scam, confidence, keywords = detect_scam(text)
+    # Scam detection (once)
+    if not session["scamDetected"]:
+        scam, confidence, keywords = detect_scam(payload.message.text)
 
-         session["intelligence"]["suspiciousKeywords"].extend(keywords)
-
+        session["scamDetected"] = scam
+        session["confidence"] = confidence
+        session["intelligence"]["suspiciousKeywords"].extend(keywords)
 
     # Extract intelligence
     extracted = extract_intelligence(payload.message.text)
@@ -346,18 +192,25 @@ if not session["scamDetected"]:
 
     agent_reply = None
 
-    # Agent activates if scam detected
-if session["scamDetected"]:
+    # Agent responds if scam detected
+    if session["scamDetected"]:
         agent_reply = generate_agent_reply(session)
-        session["messages"].append({"sender": "user", "text": agent_reply})
+        session["messages"].append({
+            "sender": "user",
+            "text": agent_reply
+        })
         session["totalMessages"] += 1
 
-    # Send GUVI callback after engagement threshold
-if session["scamDetected"] and session["totalMessages"] >= 6 and not session["callbackSent"]:
+    # GUVI Final Callback Trigger
+    if (
+        session["scamDetected"]
+        and session["totalMessages"] >= 6
+        and not session["callbackSent"]
+    ):
         send_final_callback(payload.sessionId, session)
         session["callbackSent"] = True
 
-return APIResponse(
+    return APIResponse(
         status="success",
         scamDetected=session["scamDetected"],
         confidence=session["confidence"],
@@ -365,4 +218,3 @@ return APIResponse(
         extractedIntelligence=session["intelligence"],
         totalMessagesExchanged=session["totalMessages"]
     )
-
