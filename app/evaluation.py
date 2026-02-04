@@ -1,4 +1,4 @@
-from app.state import conversation_store
+'''from app.state import conversation_store
 from datetime import datetime
 
 def summarize_conversation(conversation_id: str) -> dict:
@@ -30,4 +30,43 @@ def summarize_conversation(conversation_id: str) -> dict:
         }
     }
 
+    return metrics'''
+
+from datetime import datetime
+from app.state import sessions
+
+
+def evaluate_session(session_id):
+    if session_id not in sessions:
+        return {"error": "Session not found"}
+
+    s = sessions[session_id]
+
+    metrics = {
+        "sessionId": session_id,
+        "scamDetected": s["scamDetected"],
+        "confidence": s["confidence"],
+        "totalMessages": s["totalMessages"],
+        "engagementDepth": len(s["messages"]),
+        "uniqueIntelligenceCount": {
+            "bankAccounts": len(set(s["intelligence"]["bankAccounts"])),
+            "upiIds": len(set(s["intelligence"]["upiIds"])),
+            "phishingLinks": len(set(s["intelligence"]["phishingLinks"])),
+            "phoneNumbers": len(set(s["intelligence"]["phoneNumbers"]))
+        },
+        "engagementDurationSeconds": int((datetime.utcnow() - s["startedAt"]).total_seconds()),
+        "agentEffectivenessScore": compute_agent_score(s)
+    }
+
     return metrics
+
+
+def compute_agent_score(session):
+    score = 0
+
+    score += min(session["totalMessages"] / 10, 1.0) * 0.4
+    score += min(len(session["intelligence"]["upiIds"]) * 0.2, 0.3)
+    score += min(len(session["intelligence"]["phishingLinks"]) * 0.2, 0.3)
+
+    return round(min(score, 1.0), 2)
+
