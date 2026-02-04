@@ -121,6 +121,32 @@ from app.evaluation import evaluate_session
 # ✅ CREATE APP FIRST
 app = FastAPI(title="GUVI Agentic Honey-Pot")
 
+from fastapi.responses import HTMLResponse
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <html>
+        <head>
+            <title>GUVI Agentic Honey-Pot</title>
+            <style>
+                body { font-family: Arial; background: #0f172a; color: white; padding: 40px; }
+                h1 { color: #38bdf8; }
+                .box { background: #020617; padding: 20px; border-radius: 12px; max-width: 800px; }
+                a { color: #22c55e; text-decoration: none; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <div class="box">
+                <h1>🚨 GUVI Agentic Honey-Pot API</h1>
+                <p>AI-powered system to detect scam messages, engage scammers, extract intelligence, and report to GUVI.</p>
+                <p><b>Status:</b> Live & Production Ready</p>
+                <p>📘 API Docs: <a href="/docs">Open Swagger UI</a></p>
+                <p>❤️ Built for AI Summit Hackathon</p>
+            </div>
+        </body>
+    </html>
+    """
 
 def verify_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
