@@ -42,7 +42,7 @@ class APIResponse(BaseModel):
     extracted_intelligence: ExtractedIntelligence'''
 
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 
 class Message(BaseModel):
@@ -55,5 +55,15 @@ class IncomingRequest(BaseModel):
     sessionId: str
     message: Message
     conversationHistory: Optional[List[Message]] = []
-    metadata: Optional[dict] = {}
+    metadata: Optional[Dict[str, Any]] = {}
+
+
+class APIResponse(BaseModel):
+    status: str
+    scamDetected: bool
+    confidence: float
+    reply: Optional[str] = None
+    extractedIntelligence: Dict[str, List[str]] = {}
+    totalMessagesExchanged: int
+
 
