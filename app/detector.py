@@ -1,4 +1,4 @@
-import re
+'''import re
 
 SCAM_KEYWORDS = [
     "account blocked",
@@ -44,4 +44,29 @@ def detect_scam(message: str) -> tuple[bool, float]:
     # cap confidence
     confidence = min(score, 1.0)
 
-    return confidence >= 0.5, confidence
+    return confidence >= 0.5, confidence'''
+
+import re
+
+KEYWORDS = [
+    "otp", "urgent", "blocked", "verify", "payment",
+    "refund", "won", "lottery", "kyc", "upi", "account"
+]
+
+URL = re.compile(r"https?://")
+MONEY = re.compile(r"(₹|rs|inr|\$)")
+PAY = re.compile(r"(pay|send|transfer)")
+
+
+def detect_scam(text):
+    text = text.lower()
+    score = 0.0
+
+    score += sum(k in text for k in KEYWORDS) * 0.1
+    score += 0.3 if URL.search(text) else 0
+    score += 0.2 if MONEY.search(text) else 0
+    score += 0.2 if PAY.search(text) else 0
+
+    confidence = min(score, 1.0)
+    return confidence > 0.45, confidence
+
