@@ -106,6 +106,8 @@ def health():
         "docs": "/docs"
     }
 '''
+
+
 from fastapi import FastAPI, Header, HTTPException, Depends
 from app.schemas import IncomingRequest, APIResponse
 from app.state import get_session, update_session
@@ -116,10 +118,7 @@ from app.callback import send_final_callback
 from app.config import API_KEY
 from app.evaluation import evaluate_session
 
-@app.get("/evaluate/{session_id}")
-def get_evaluation(session_id: str, _: None = Depends(verify_key)):
-    return evaluate_session(session_id)
-
+# ✅ CREATE APP FIRST
 app = FastAPI(title="GUVI Agentic Honey-Pot")
 
 
@@ -133,6 +132,11 @@ def health():
     return {"status": "live", "service": "GUVI Agentic Honey-Pot"}
 
 
+@app.get("/evaluate/{session_id}")
+def get_evaluation(session_id: str, _: None = Depends(verify_key)):
+    return evaluate_session(session_id)
+
+
 @app.post("/message", response_model=APIResponse)
 async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)):
 
@@ -140,6 +144,7 @@ async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)
 
     # Add new message to history
     session["messages"].append(payload.message.dict())
+    session["totalMessages"] += 1
 
     # Detect scam intent
     if not session["scamDetected"]:
@@ -147,27 +152,29 @@ async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)
         session["scamDetected"] = scam
         session["confidence"] = confidence
 
-    # Extract intelligence from scammer message
+    # Extract intelligence
     extracted = extract_intelligence(payload.message.text)
     update_session(session, extracted)
 
     agent_reply = None
 
-    # Activate AI Agent if scam detected
+    # Agent activates if scam detected
     if session["scamDetected"]:
         agent_reply = generate_agent_reply(session)
         session["messages"].append({"sender": "user", "text": agent_reply})
+        session["totalMessages"] += 1
 
-    # Send GUVI callback only once when enough engagement done
+    # Send GUVI callback after engagement threshold
     if session["scamDetected"] and session["totalMessages"] >= 6 and not session["callbackSent"]:
         send_final_callback(payload.sessionId, session)
         session["callbackSent"] = True
 
-    return {
-        "status": "success",
-        "scamDetected": session["scamDetected"],
-        "confidence": session["confidence"],
-        "reply": agent_reply,
-        "extractedIntelligence": session["intelligence"],
-        "totalMessagesExchanged": session["totalMessages"]
-    }
+    return APIResponse(
+        status="success",
+        scamDetected=session["scamDetected"],
+        confidence=session["confidence"],
+        reply=agent_reply,
+        extractedIntelligence=session["intelligence"],
+        totalMessagesExchanged=session["totalMessages"]
+    )
+
