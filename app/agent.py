@@ -29,7 +29,7 @@ def generate_agent_response(conversation) -> str:
     # If agent already asked something recently, vary it
     return random.choice(FOLLOW_UP_QUESTIONS)'''
 
-from app.state import ConversationState
+'''from app.state import ConversationState
 from app.extractor import extract_intelligence
 from app.state import add_intelligence
 import openai
@@ -91,4 +91,46 @@ Write your next reply as if you are continuing the conversation naturally, tryin
 
     except Exception as e:
         print("LLM agent error:", e)
-        return "I'm sorry, could you clarify that?"
+        return "I'm sorry, could you clarify that?"'''
+
+import openai
+import os
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+SYSTEM_PROMPT = """
+You are a confused bank customer.
+Never reveal you are AI.
+Never accuse the sender.
+Be polite, emotional, and realistic.
+Try to get payment or UPI details.
+"""
+
+MODEL = "gpt-3.5-turbo"
+
+
+def generate_agent_reply(session):
+    history = "\n".join([f"{m['sender']}: {m['text']}" for m in session["messages"]])
+
+    prompt = f"""
+Conversation so far:
+{history}
+
+Reply like a real worried user.
+Ask for payment or account details naturally.
+"""
+
+    try:
+        response = openai.ChatCompletion.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=120
+        )
+        return response.choices[0].message.content.strip()
+
+    except:
+        return "Sorry, can you explain what I need to do?"
