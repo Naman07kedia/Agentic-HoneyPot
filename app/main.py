@@ -122,31 +122,94 @@ from app.evaluation import evaluate_session
 app = FastAPI(title="GUVI Agentic Honey-Pot")
 
 from fastapi.responses import HTMLResponse
+from app.state import session_store
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return """
+    total_sessions = len(session_store)
+    scam_sessions = sum(1 for s in session_store.values() if s["scamDetected"])
+
+    return f"""
     <html>
-        <head>
-            <title>GUVI Agentic Honey-Pot</title>
-            <style>
-                body { font-family: Arial; background: #0f172a; color: white; padding: 40px; }
-                h1 { color: #38bdf8; }
-                .box { background: #020617; padding: 20px; border-radius: 12px; max-width: 800px; }
-                a { color: #22c55e; text-decoration: none; font-weight: bold; }
-            </style>
-        </head>
-        <body>
-            <div class="box">
-                <h1>🚨 GUVI Agentic Honey-Pot API</h1>
-                <p>AI-powered system to detect scam messages, engage scammers, extract intelligence, and report to GUVI.</p>
-                <p><b>Status:</b> Live & Production Ready</p>
-                <p>📘 API Docs: <a href="/docs">Open Swagger UI</a></p>
-                <p>❤️ Built for AI Summit Hackathon</p>
+    <head>
+        <title>GUVI Agentic Honey-Pot</title>
+        <style>
+            body {{
+                font-family: Inter, Arial;
+                background: linear-gradient(135deg, #020617, #020617);
+                color: white;
+                padding: 40px;
+            }}
+            .container {{
+                max-width: 900px;
+                background: #020617;
+                padding: 30px;
+                border-radius: 18px;
+                box-shadow: 0 0 40px rgba(56,189,248,0.15);
+            }}
+            h1 {{ color: #38bdf8; }}
+            .badge {{
+                background: #22c55e;
+                color: black;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-weight: bold;
+                display: inline-block;
+            }}
+            a {{
+                color: #38bdf8;
+                text-decoration: none;
+                font-weight: bold;
+            }}
+            .stats {{
+                margin-top: 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
+            }}
+            .card {{
+                background: #020617;
+                padding: 16px;
+                border-radius: 12px;
+                border: 1px solid #1e293b;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚨 GUVI Agentic Honey-Pot API</h1>
+            <p>AI-powered system that detects scam messages, autonomously engages scammers, extracts financial intelligence, and reports results to GUVI.</p>
+
+            <span class="badge">LIVE • Hackathon Ready</span>
+
+            <div class="stats">
+                <div class="card">
+                    <b>Total Sessions</b><br>{total_sessions}
+                </div>
+                <div class="card">
+                    <b>Scam Sessions Detected</b><br>{scam_sessions}
+                </div>
+                <div class="card">
+                    <b>Status</b><br>Operational
+                </div>
             </div>
-        </body>
+
+            <br>
+
+            <p>📘 API Documentation → <a href="/docs">Open Swagger UI</a></p>
+            <p>📡 Health Check → <a href="/health">/health</a></p>
+            <p>🧠 Evaluation → <a href="/evaluate/demo-session">/evaluate/{'{session_id}'}</a></p>
+
+            <hr style="border-color:#1e293b">
+
+            <p>🏆 Built for GUVI AI Summit Hackathon</p>
+            <p>🔐 Secure API Key Enabled</p>
+            <p>🤖 Autonomous Scam Engagement Engine</p>
+        </div>
+    </body>
     </html>
     """
+
 
 def verify_key(x_api_key: str = Header(...)):
     if x_api_key != API_KEY:
