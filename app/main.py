@@ -1,4 +1,4 @@
-from app.config import API_KEY
+'''from app.config import API_KEY
 from fastapi import Query
 from datetime import datetime
 from app.evaluation import summarize_conversation
@@ -104,4 +104,65 @@ def health():
         "status": "live",
         "service": "Agentic Honey-Pot",
         "docs": "/docs"
+    }
+'''
+from fastapi import FastAPI, Header, HTTPException, Depends
+from app.schemas import IncomingRequest, APIResponse
+from app.state import get_session, update_session
+from app.detector import detect_scam
+from app.agent import generate_agent_reply
+from app.extractor import extract_intelligence
+from app.callback import send_final_callback
+from app.config import API_KEY
+
+app = FastAPI(title="GUVI Agentic Honey-Pot")
+
+
+def verify_key(x_api_key: str = Header(...)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
+
+@app.get("/health")
+def health():
+    return {"status": "live", "service": "GUVI Agentic Honey-Pot"}
+
+
+@app.post("/message", response_model=APIResponse)
+async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)):
+
+    session = get_session(payload.sessionId)
+
+    # Add new message to history
+    session["messages"].append(payload.message.dict())
+
+    # Detect scam intent
+    if not session["scamDetected"]:
+        scam, confidence = detect_scam(payload.message.text)
+        session["scamDetected"] = scam
+        session["confidence"] = confidence
+
+    # Extract intelligence from scammer message
+    extracted = extract_intelligence(payload.message.text)
+    update_session(session, extracted)
+
+    agent_reply = None
+
+    # Activate AI Agent if scam detected
+    if session["scamDetected"]:
+        agent_reply = generate_agent_reply(session)
+        session["messages"].append({"sender": "user", "text": agent_reply})
+
+    # Send GUVI callback only once when enough engagement done
+    if session["scamDetected"] and session["totalMessages"] >= 6 and not session["callbackSent"]:
+        send_final_callback(payload.sessionId, session)
+        session["callbackSent"] = True
+
+    return {
+        "status": "success",
+        "scamDetected": session["scamDetected"],
+        "confidence": session["confidence"],
+        "reply": agent_reply,
+        "extractedIntelligence": session["intelligence"],
+        "totalMessagesExchanged": session["totalMessages"]
     }
