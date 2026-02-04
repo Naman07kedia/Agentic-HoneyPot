@@ -20,3 +20,7 @@ GUVI_CALLBACK_URL = "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
 MAX_SESSIONS = 5000
 CALLBACK_MIN_TURNS = 6
 
+GUVI_CALLBACK_URL = os.getenv(
+    "GUVI_CALLBACK_URL",
+    "https://hackathon.guvi.in/api/updateHoneyPotFinalResult"
+)
