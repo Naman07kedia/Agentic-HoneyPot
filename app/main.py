@@ -209,6 +209,104 @@ def home():
     </body>
     </html>
     """
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    total_sessions = len(session_store)
+    scam_sessions = sum(1 for s in session_store.values() if s["scamDetected"])
+    total_messages = sum(len(s["messages"]) for s in session_store.values())
+
+    return f"""
+    <html>
+    <head>
+        <title>GUVI Honeypot Dashboard</title>
+        <style>
+            body {{
+                font-family: Inter, Arial;
+                background: #020617;
+                color: white;
+                padding: 30px;
+            }}
+            .grid {{
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 16px;
+            }}
+            .card {{
+                background: #020617;
+                padding: 20px;
+                border-radius: 14px;
+                border: 1px solid #1e293b;
+                box-shadow: 0 0 20px rgba(56,189,248,0.15);
+            }}
+            h1 {{ color: #38bdf8; }}
+            a {{ color: #22c55e; text-decoration: none; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <h1>📡 GUVI Honeypot Admin Dashboard</h1>
+
+        <div class="grid">
+            <div class="card">🧠 Total Sessions<br><b>{total_sessions}</b></div>
+            <div class="card">🚨 Scam Sessions<br><b>{scam_sessions}</b></div>
+            <div class="card">💬 Messages Logged<br><b>{total_messages}</b></div>
+        </div>
+
+        <br>
+
+        <p>🔍 View Conversations → <a href="/sessions">Sessions Panel</a></p>
+        <p>📘 API Docs → <a href="/docs">Swagger UI</a></p>
+        <p>🏠 Home → <a href="/">Home</a></p>
+
+    </body>
+    </html>
+    """
+@app.get("/sessions", response_class=HTMLResponse)
+def view_sessions():
+    html = """
+    <html><body style="font-family:Arial;background:#020617;color:white;padding:30px;">
+    <h1>🕵️ Honeypot Session Viewer</h1>
+    """
+
+    for session_id, session in session_store.items():
+        html += f"<hr><h3>Session: {session_id}</h3>"
+        html += f"<p>Scam Detected: {session['scamDetected']}</p>"
+
+        for msg in session["messages"]:
+            sender = msg.get("sender")
+            text = msg.get("text")
+            color = "#22c55e" if sender == "user" else "#ef4444"
+            html += f"<p style='color:{color}'><b>{sender}:</b> {text}</p>"
+
+    html += "</body></html>"
+    return html
+@app.get("/intelligence", response_class=HTMLResponse)
+def intelligence_panel():
+    html = "<html><body style='background:#020617;color:white;padding:30px;'>"
+    html += "<h1>💰 Extracted Scam Intelligence</h1>"
+
+    for session_id, session in session_store.items():
+        intel = session["intelligence"]
+        html += f"<hr><h3>Session {session_id}</h3>"
+        html += f"<p>Bank Accounts: {intel.get('bankAccounts')}</p>"
+        html += f"<p>UPI IDs: {intel.get('upiIds')}</p>"
+        html += f"<p>Phishing Links: {intel.get('phishingLinks')}</p>"
+        html += f"<p>Phone Numbers: {intel.get('phoneNumbers')}</p>"
+
+    html += "</body></html>"
+    return html
+@app.get("/analytics")
+def analytics():
+    keywords = {}
+
+    for session in session_store.values():
+        for k in session["intelligence"].get("suspiciousKeywords", []):
+            keywords[k] = keywords.get(k, 0) + 1
+
+    return {
+        "total_sessions": len(session_store),
+        "scam_sessions": sum(s["scamDetected"] for s in session_store.values()),
+        "top_scam_keywords": keywords
+    }
 
 
 def verify_key(x_api_key: str = Header(...)):
