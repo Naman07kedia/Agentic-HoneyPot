@@ -335,9 +335,10 @@ async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)
 
     # Detect scam intent
     if not session["scamDetected"]:
-        scam, confidence = detect_scam(payload.message.text)
-        session["scamDetected"] = scam
-        session["confidence"] = confidence
+         scam, confidence, keywords = detect_scam(text)
+
+session["intelligence"]["suspiciousKeywords"].extend(keywords)
+
 
     # Extract intelligence
     extracted = extract_intelligence(payload.message.text)
