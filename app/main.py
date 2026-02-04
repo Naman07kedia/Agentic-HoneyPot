@@ -327,17 +327,17 @@ def get_evaluation(session_id: str, _: None = Depends(verify_key)):
 @app.post("/message", response_model=APIResponse)
 async def handle_message(payload: IncomingRequest, _: None = Depends(verify_key)):
 
-    session = get_session(payload.sessionId)
+        session = get_session(payload.sessionId)
 
     # Add new message to history
-    session["messages"].append(payload.message.dict())
-    session["totalMessages"] += 1
+            session["messages"].append(payload.message.dict())
+            session["totalMessages"] += 1
 
     # Detect scam intent
-    if not session["scamDetected"]:
+if not session["scamDetected"]:
          scam, confidence, keywords = detect_scam(text)
 
-session["intelligence"]["suspiciousKeywords"].extend(keywords)
+         session["intelligence"]["suspiciousKeywords"].extend(keywords)
 
 
     # Extract intelligence
@@ -347,17 +347,17 @@ session["intelligence"]["suspiciousKeywords"].extend(keywords)
     agent_reply = None
 
     # Agent activates if scam detected
-    if session["scamDetected"]:
+if session["scamDetected"]:
         agent_reply = generate_agent_reply(session)
         session["messages"].append({"sender": "user", "text": agent_reply})
         session["totalMessages"] += 1
 
     # Send GUVI callback after engagement threshold
-    if session["scamDetected"] and session["totalMessages"] >= 6 and not session["callbackSent"]:
+if session["scamDetected"] and session["totalMessages"] >= 6 and not session["callbackSent"]:
         send_final_callback(payload.sessionId, session)
         session["callbackSent"] = True
 
-    return APIResponse(
+return APIResponse(
         status="success",
         scamDetected=session["scamDetected"],
         confidence=session["confidence"],
